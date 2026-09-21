@@ -1,0 +1,180 @@
+-- Script MySQL - Sistema de Locadora/Revenda de Veículos
+CREATE DATABASE IF NOT EXISTS locadora_revenda;
+USE locadora_revenda;
+
+CREATE TABLE funcionario(
+ id_funcionario INT PRIMARY KEY,
+ cpf CHAR(11) UNIQUE NOT NULL,
+ nome VARCHAR(100) NOT NULL,
+ cargo VARCHAR(40) NOT NULL
+);
+
+CREATE TABLE vendedor(
+ id_funcionario INT PRIMARY KEY,
+ FOREIGN KEY(id_funcionario) REFERENCES funcionario(id_funcionario)
+);
+
+CREATE TABLE atendente(
+ id_funcionario INT PRIMARY KEY,
+ FOREIGN KEY(id_funcionario) REFERENCES funcionario(id_funcionario)
+);
+
+CREATE TABLE cliente(
+ cpf CHAR(11) PRIMARY KEY,
+ nome VARCHAR(100) NOT NULL,
+ email VARCHAR(120),
+ telefone VARCHAR(20),
+ rua VARCHAR(100),
+ numero VARCHAR(10),
+ bairro VARCHAR(60)
+);
+
+CREATE TABLE veiculo_venda(
+ placa VARCHAR(10) PRIMARY KEY,
+ chassi VARCHAR(30) UNIQUE,
+ ano_fabricacao INT,
+ cor VARCHAR(30),
+ combustivel VARCHAR(20),
+ quilometragem INT,
+ valor_venda DECIMAL(10,2),
+ status VARCHAR(20),
+ CHECK (ano_fabricacao BETWEEN 1990 AND 2035),
+ CHECK (quilometragem>=0),
+ CHECK (valor_venda>0),
+ CHECK (status IN ('DISPONIVEL','VENDIDO'))
+);
+
+CREATE TABLE venda(
+ id_venda INT PRIMARY KEY,
+ data_venda DATE,
+ valor_final DECIMAL(10,2),
+ forma_pagamento VARCHAR(20),
+ comissao DECIMAL(10,2),
+ cpf_cliente CHAR(11),
+ placa VARCHAR(10),
+ id_vendedor INT,
+ FOREIGN KEY(cpf_cliente) REFERENCES cliente(cpf),
+ FOREIGN KEY(placa) REFERENCES veiculo_venda(placa),
+ FOREIGN KEY(id_vendedor) REFERENCES vendedor(id_funcionario)
+);
+
+CREATE TABLE veiculo_locacao(
+ placa VARCHAR(10) PRIMARY KEY,
+ chassi VARCHAR(30) UNIQUE,
+ ano_fabricacao INT,
+ cor VARCHAR(30),
+ combustivel VARCHAR(20),
+ quilometragem INT,
+ status VARCHAR(20),
+ CHECK(status IN ('DISPONIVEL','LOCADO','MANUTENCAO'))
+);
+
+CREATE TABLE locacao(
+ id_locacao INT PRIMARY KEY,
+ valor_diaria DECIMAL(10,2),
+ valor_total_previsto DECIMAL(10,2),
+ valor_total_real DECIMAL(10,2),
+ condicoes_contrato VARCHAR(255),
+ data_devolucao DATE,
+ data_retirada DATE,
+ cpf_cliente CHAR(11),
+ placa VARCHAR(10),
+ id_atendente INT,
+ FOREIGN KEY(cpf_cliente) REFERENCES cliente(cpf),
+ FOREIGN KEY(placa) REFERENCES veiculo_locacao(placa),
+ FOREIGN KEY(id_atendente) REFERENCES atendente(id_funcionario)
+);
+
+CREATE TABLE pagamento(
+ id_pagamento INT PRIMARY KEY,
+ valor DECIMAL(10,2),
+ data_pagamento DATE,
+ tipo VARCHAR(20),
+ id_venda INT NULL,
+ id_locacao INT NULL,
+ FOREIGN KEY(id_venda) REFERENCES venda(id_venda),
+ FOREIGN KEY(id_locacao) REFERENCES locacao(id_locacao)
+);
+
+CREATE TABLE multa(
+ id_multa INT PRIMARY KEY,
+ valor DECIMAL(10,2),
+ tipo_infracao VARCHAR(100),
+ id_locacao INT,
+ FOREIGN KEY(id_locacao) REFERENCES locacao(id_locacao)
+);
+
+INSERT INTO funcionario VALUES
+(1,'11111111111','Ana','VENDEDOR'),
+(2,'22222222222','Bruno','VENDEDOR'),
+(3,'33333333333','Carlos','VENDEDOR'),
+(4,'44444444444','Diana','ATENDENTE'),
+(5,'55555555555','Eduardo','ATENDENTE'),
+(6,'66666666666','Fernanda','ATENDENTE');
+
+INSERT INTO vendedor VALUES (1),(2),(3);
+INSERT INTO atendente VALUES (4),(5),(6);
+
+INSERT INTO cliente VALUES
+('10110110110','João','joao@email.com','47999990001','Rua A','10','Centro'),
+('20220220220','Maria','maria@email.com','47999990002','Rua B','20','Centro'),
+('30330330330','Pedro','pedro@email.com','47999990003','Rua C','30','Serra'),
+('40440440440','Julia','julia@email.com','47999990004','Rua D','40','Oxford'),
+('50550550550','Lucas','lucas@email.com','47999990005','Rua E','50','Colonial'),
+('60660660660','Paula','paula@email.com','47999990006','Rua F','60','Rio Negro');
+
+INSERT INTO veiculo_venda VALUES
+('AAA1A11','CH1',2022,'Branco','Flex',20000,85000,'DISPONIVEL'),
+('BBB2B22','CH2',2021,'Preto','Gasolina',30000,78000,'DISPONIVEL'),
+('CCC3C33','CH3',2023,'Prata','Flex',10000,95000,'DISPONIVEL'),
+('DDD4D44','CH4',2020,'Cinza','Diesel',40000,120000,'VENDIDO'),
+('EEE5E55','CH5',2019,'Azul','Flex',50000,65000,'DISPONIVEL'),
+('FFF6F66','CH6',2024,'Vermelho','Híbrido',5000,145000,'DISPONIVEL');
+
+INSERT INTO venda VALUES
+(1,'2026-07-01',120000,'PIX',5000,'10110110110','DDD4D44',1),
+(2,'2026-07-02',65000,'FINANCIAMENTO',3000,'20220220220','EEE5E55',2),
+(3,'2026-07-03',85000,'PIX',3500,'30330330330','AAA1A11',3),
+(4,'2026-07-04',78000,'CARTAO',3200,'40440440440','BBB2B22',1),
+(5,'2026-07-05',95000,'PIX',4000,'50550550550','CCC3C33',2),
+(6,'2026-07-06',145000,'FINANCIAMENTO',7000,'60660660660','FFF6F66',3);
+
+INSERT INTO veiculo_locacao VALUES
+('LOC1','L1',2023,'Branco','Flex',12000,'DISPONIVEL'),
+('LOC2','L2',2022,'Preto','Flex',25000,'LOCADO'),
+('LOC3','L3',2024,'Prata','Híbrido',8000,'DISPONIVEL'),
+('LOC4','L4',2021,'Cinza','Diesel',35000,'MANUTENCAO'),
+('LOC5','L5',2020,'Azul','Flex',45000,'DISPONIVEL'),
+('LOC6','L6',2023,'Vermelho','Flex',15000,'LOCADO');
+
+INSERT INTO locacao VALUES
+(1,180,900,900,'OK','2026-07-05','2026-07-01','10110110110','LOC2',4),
+(2,170,510,510,'OK','2026-07-06','2026-07-03','20220220220','LOC6',5),
+(3,160,480,480,'OK','2026-07-08','2026-07-05','30330330330','LOC1',6),
+(4,150,300,300,'OK','2026-07-09','2026-07-07','40440440440','LOC3',4),
+(5,190,570,570,'OK','2026-07-10','2026-07-08','50550550550','LOC5',5),
+(6,200,600,650,'Atraso','2026-07-11','2026-07-08','60660660660','LOC2',6);
+
+INSERT INTO pagamento VALUES
+(1,120000,'2026-07-01','VENDA',1,NULL),
+(2,65000,'2026-07-02','VENDA',2,NULL),
+(3,900,'2026-07-05','LOCACAO',NULL,1),
+(4,510,'2026-07-06','LOCACAO',NULL,2),
+(5,480,'2026-07-08','LOCACAO',NULL,3),
+(6,650,'2026-07-11','LOCACAO',NULL,6);
+
+INSERT INTO multa VALUES
+(1,150,'Atraso',6),
+(2,0,'Nenhuma',1),
+(3,0,'Nenhuma',2),
+(4,0,'Nenhuma',3),
+(5,0,'Nenhuma',4),
+(6,0,'Nenhuma',5);
+
+CREATE USER IF NOT EXISTS 'administrador'@'localhost' IDENTIFIED BY 'Admin@123';
+GRANT ALL PRIVILEGES ON locadora_revenda.* TO 'administrador'@'localhost';
+
+CREATE USER IF NOT EXISTS 'operador'@'localhost' IDENTIFIED BY 'Operador@123';
+GRANT SELECT,INSERT ON locadora_revenda.* TO 'operador'@'localhost';
+
+FLUSH PRIVILEGES;
